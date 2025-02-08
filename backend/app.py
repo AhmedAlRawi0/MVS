@@ -79,5 +79,57 @@ def get_cv(volunteer_id):
     except Exception as e:
         return jsonify({"success": False, "message": "Error retrieving file.", "error": str(e)}), 500
 
+@app.route("/applications", methods=["GET"])
+def get_applications():
+    # Find all volunteer documents where is_screened is False.
+    applications_cursor = mongo.db.volunteers.find({"is_screened": False})
+    applications = list(applications_cursor)
+
+    # Convert ObjectId fields to strings.
+    for application in applications:
+        application["_id"] = str(application["_id"])
+        # If cv exists, keep it as a string; otherwise, it's already None.
+        if application.get("cv"):
+            application["cv"] = str(application["cv"])
+
+    return jsonify({
+        "success": True,
+        "applications": applications
+    })
+
+@app.route("/application/<application_id>/approve", methods=["GET"])
+def approve_application(application_id):
+    # Update the volunteer document with the given _id, setting is_screened to True.
+    result = mongo.db.volunteers.update_one(
+        {"_id": application_id},
+        {"$set": {"is_screened": True}}
+    )
+    if result.matched_count == 0:
+        return jsonify({
+            "success": False,
+            "message": f"No application found with id {application_id}"
+        }), 404
+    return jsonify({
+        "success": True,
+        "message": f"Application {application_id} approved."
+    })
+
+@app.route("/application/<application_id>/reject", methods=["GET"])
+def reject_application(application_id):
+    # Attempt to delete the document with the given _id. This assumes the id is stored as a string.
+    result = mongo.db.volunteers.delete_one({"_id": application_id})
+    
+    # Check if any document was actually deleted.
+    if result.deleted_count == 0:
+        return jsonify({
+            "success": False,
+            "message": f"No application found with id {application_id}"
+        }), 404
+
+    return jsonify({
+        "success": True,
+        "message": f"Application {application_id} rejected and deleted."
+    })
+
 if __name__ == "__main__":
     app.run(debug=True)

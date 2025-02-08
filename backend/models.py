@@ -3,12 +3,22 @@ from bson.objectid import ObjectId
 ALLOWED_VOLUNTEERING_ROLES = ["Cooking", "Packaging", "Cleaning", "Distributing"]
 
 class Volunteer:
-    def __init__(self, name, desc_paragraph, phone_number, email, cv=None, volunteering_role=None, availabilities=None, _id=None):
+    def __init__(self,
+                 name,
+                 desc_paragraph,
+                 phone_number,
+                 email,
+                 cv=None,
+                 volunteering_role=None,
+                 availabilities=None,
+                 _id=None,
+                 is_screened=False):
         self._id = _id if _id else ObjectId()
         self.name = name
         self.phone_number = phone_number
         self.desc_paragraph = desc_paragraph
         self.email = email
+        self.is_screened = is_screened
 
         # cv stores the GridFS file ID. It can be None if the user did not upload a file.
         self.cv = cv
@@ -34,7 +44,8 @@ class Volunteer:
             "phone_number": self.phone_number,
             "cv": str(self.cv) if self.cv else None,
             "volunteering_role": self.volunteering_role,
-            "availabilities": self.availabilities
+            "availabilities": self.availabilities,
+            "is_screened": self.is_screened,
         }
 
     @classmethod
@@ -54,5 +65,6 @@ class Volunteer:
             cv=cv,
             volunteering_role=data.get("volunteering_role"),
             availabilities=data.get("availabilities"),
-            _id=_id
+            _id=_id,
+            is_screened=data.get("is_screened"),
         )
