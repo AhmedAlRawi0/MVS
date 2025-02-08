@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "http://localhost:5000";  // Adjust based on your backend
+const API_BASE = "http://127.0.0.1:5000";  // Adjust based on your backend
 
 export const signupVolunteer = (data) => axios.post(`${API_BASE}/signup`, data);
 

@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Signup from "./components/Signup";
 import Applications from "./components/Applications";
 import VolunteerList from "./components/VolunteerList";
+import './styles/global.css';
+import './styles/navbar.css';
+import './styles/footer.css';
 
 const App = () => {
   return (

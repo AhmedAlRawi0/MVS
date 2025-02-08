@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_pymongo import PyMongo
 from flask_cors import CORS
 from models import Volunteer, ALLOWED_VOLUNTEERING_ROLES
-from bson.objectid import ObjectId
+from bson import ObjectId
 import gridfs
 import io
 
