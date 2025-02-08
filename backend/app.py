@@ -23,6 +23,7 @@ def signup():
     name = request.form.get("name")
     desc_paragraph = request.form.get("desc_paragraph")
     phone_number = request.form.get("phone_number")
+    gender = request.form.get("gender")
     email = request.form.get("email")
     volunteering_role = request.form.get("volunteering_role")
     availabilities = request.form.get("availabilities")  # Expect a JSON string, or process as needed.
@@ -40,6 +41,7 @@ def signup():
             name=name,
             phone_number=phone_number,
             desc_paragraph=desc_paragraph,
+            gender=gender,
             email=email,
             cv=cv_file_id,  # Save the GridFS file id (or None if no file)
             volunteering_role=volunteering_role,
@@ -130,6 +132,26 @@ def reject_application(application_id):
         "success": True,
         "message": f"Application {application_id} rejected and deleted."
     })
+
+@app.route("/volunteers", methods=["GET"])
+def get_volunteers():
+    # Find all volunteer documents where is_screened is False.
+    volunteers_cursor = mongo.db.volunteers.find({"is_screened": True})
+    volunteers = list(volunteers_cursor)
+
+    # Convert ObjectId fields to strings.
+    for volunteer in volunteers:
+        volunteer["_id"] = str(volunteer["_id"])
+        # If cv exists, keep it as a string; otherwise, it's already None.
+        if volunteer.get("cv"):
+            volunteer["cv"] = str(volunteer["cv"])
+
+    return jsonify({
+        "success": True,
+        "volunteers": volunteers
+    })
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
