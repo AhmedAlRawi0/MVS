@@ -9,6 +9,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
@@ -155,13 +156,22 @@ def get_volunteers():
         "volunteers": volunteers
     })
 
-
 @app.route("/send-email", methods=["POST"])
 def send_email_to_volunteers():
     data = request.get_json()
     volunteer_ids = data.get("volunteerIds", [])
     subject = data.get("subject", "")
     message_body = data.get("message", "")
+
+    # Convert newlines to HTML breaks
+    message_body = message_body.replace('\n', '<br>')
+    
+    # Wrap the message in some basic HTML styling
+    html_message = f"""
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        {message_body}
+    </div>
+    """
 
     if not volunteer_ids or not subject or not message_body:
         return jsonify({"success": False, "message": "volunteerIds, subject, and message are required."}), 400
@@ -186,14 +196,12 @@ def send_email_to_volunteers():
 
     try:
         for to_email in recipients:
-            # Prepare the email message (HTML format)
             message = MIMEMultipart()
             message["From"] = f"{SENDER_NAME} <{EMAIL_ADDRESS}>"
             message["To"] = to_email
             message["Subject"] = subject
-            message.attach(MIMEText(message_body, "html"))
+            message.attach(MIMEText(html_message, "html"))  # Use the HTML version
             
-            # Connect to the SMTP server and send the email.
             with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
                 server.starttls()
                 server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
@@ -201,7 +209,7 @@ def send_email_to_volunteers():
         
         return jsonify({
             "success": True,
-            "message": "Emails sent successfully."
+            "message": f"Emails sent successfully to {len(recipients)} recipients."
         })
     except Exception as e:
         return jsonify({
