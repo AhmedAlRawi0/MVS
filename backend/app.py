@@ -62,17 +62,18 @@ def signup():
 # Endpoint to download/retrieve a stored CV by volunteer ID.
 @app.route("/cv/<volunteer_id>", methods=["GET"])
 def get_cv(volunteer_id):
-    # Look up volunteer document
-    volunteer = mongo.db.volunteers.find_one({"_id": ObjectId(volunteer_id)})
+    # Look up volunteer document by matching the _id as a string.
+    volunteer = mongo.db.volunteers.find_one({"_id": volunteer_id})
     if not volunteer or not volunteer.get("cv"):
         return jsonify({"success": False, "message": "CV not found."}), 404
     try:
-        file_id = volunteer.get("cv")
+        # Convert the stored cv (string) back to an ObjectId
+        file_id = ObjectId(volunteer.get("cv"))
         file_obj = fs.get(file_id)
         # Send the file back, setting the appropriate mimetype.
         return send_file(
             io.BytesIO(file_obj.read()),
-            attachment_filename=file_obj.filename,
+            download_name=file_obj.filename,
             mimetype=file_obj.content_type
         )
     except Exception as e:
