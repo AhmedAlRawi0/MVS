@@ -1,6 +1,6 @@
 from bson.objectid import ObjectId
 
-ALLOWED_VOLUNTEERING_ROLES = ["Cooking", "packaging", "cleaning", "distributing"]
+ALLOWED_VOLUNTEERING_ROLES = ["Cooking", "Packaging", "Cleaning", "Distributing"]
 
 class Volunteer:
     def __init__(self, name, desc_paragraph, phone_number, email, cv=None, volunteering_role=None, availabilities=None, _id=None):
