@@ -5,6 +5,10 @@ from models import Volunteer, ALLOWED_VOLUNTEERING_ROLES
 from bson import ObjectId
 import gridfs
 import io
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import os
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
@@ -152,6 +156,59 @@ def get_volunteers():
     })
 
 
+@app.route("/send-email", methods=["POST"])
+def send_email_to_volunteers():
+    data = request.get_json()
+    volunteer_ids = data.get("volunteerIds", [])
+    subject = data.get("subject", "")
+    message_body = data.get("message", "")
+
+    if not volunteer_ids or not subject or not message_body:
+        return jsonify({"success": False, "message": "volunteerIds, subject, and message are required."}), 400
+
+    # Gather email addresses for given volunteer IDs
+    recipients = []
+    for vid in volunteer_ids:
+        # Using the fact that _id is stored as a string
+        volunteer = mongo.db.volunteers.find_one({"_id": vid})
+        if volunteer and volunteer.get("email"):
+            recipients.append(volunteer["email"])
+
+    if not recipients:
+        return jsonify({"success": False, "message": "No valid email recipients found."}), 400
+
+    # SMTP configuration 
+    SMTP_SERVER = 'smtp.gmail.com'
+    SMTP_PORT = 587
+    EMAIL_ADDRESS = os.environ.get('EMAIL_ADDRESS', 'noreply.mydailyreminder@gmail.com')
+    EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
+    SENDER_NAME = os.environ.get('SENDER_NAME', 'Sister Sabria Foundation')
+
+    try:
+        for to_email in recipients:
+            # Prepare the email message (HTML format)
+            message = MIMEMultipart()
+            message["From"] = f"{SENDER_NAME} <{EMAIL_ADDRESS}>"
+            message["To"] = to_email
+            message["Subject"] = subject
+            message.attach(MIMEText(message_body, "html"))
+            
+            # Connect to the SMTP server and send the email.
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+                server.starttls()
+                server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+                server.sendmail(EMAIL_ADDRESS, to_email, message.as_string())
+        
+        return jsonify({
+            "success": True,
+            "message": "Emails sent successfully."
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": "Error sending emails.",
+            "error": str(e)
+        }), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
