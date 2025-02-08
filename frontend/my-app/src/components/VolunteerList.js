@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/VolunteerList.css';
-import { fetchVolunteers, sendEmails } from "../services/api";
+import { fetchVolunteers, rejectApplication } from "../services/api";
+
+const API_BASE = "http://127.0.0.1:5000"; 
 
 const VolunteerList = () => {
   const [volunteers, setVolunteers] = useState([]);
@@ -17,61 +19,33 @@ const VolunteerList = () => {
   const itemsPerPage = 10;
   const roles = ["Cooking", "Packaging", "Cleaning", "Distributing"];
 
-  const fetchVolunteers = async () => {
+  const getVolunteers = async () => {
     try {
-      // Mock data for testing
-      const mockData = [
-        {
-          id: 1,
-          name: "John Doe",
-          email: "john@example.com",
-          phoneNumber: "1234567890",
-          volunteeringRole: "Cooking",
-          description_paragraph: "I love cooking and want to help the community.",
-          availabilities: ["2024-03-20", "2024-03-21", "2024-03-22"]
-        },
-        {
-          id: 2,
-          name: "Jane Smith",
-          email: "jane@example.com",
-          phoneNumber: "0987654321",
-          volunteeringRole: "Packaging",
-          description_paragraph: "I have experience in food packaging.",
-          availabilities: ["2024-03-23", "2024-03-24"]
-        },
-        {
-          id: 3,
-          name: "Alice Johnson",
-          email: "alice@example.com",
-          phoneNumber: "5555555555",
-          volunteeringRole: "Distributing",
-          description_paragraph: "I have a car and can help with distribution.",
-          availabilities: ["2024-03-25", "2024-03-26", "2024-03-27"]
-        }
-      ];
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setVolunteers(mockData);
+      const response = await fetchVolunteers();
+      console.log('API Response:', response); // Debug log
+      
+      if (response.data.success) {
+        setVolunteers(response.data.volunteers);
+        // Set initial checkbox state
+        const initSelected = new Set();
+        response.data.volunteers.forEach(vol => {
+          initSelected.add(vol._id); // Note: using _id instead of id
+        });
+        setSelectedVolunteers(initSelected);
+      } else {
+        console.error('Failed to fetch volunteers:', response.data);
+        setVolunteers([]);
+      }
       setLoading(false);
     } catch (error) {
       console.error('Error fetching volunteers:', error);
+      setVolunteers([]);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchVolunteers().then(res => {
-      setVolunteers(res.data);
-      // Set initial checkbox state to false
-      const initSelected = new Set();
-      res.data.forEach(vol => {
-        initSelected.add(vol.id);
-      });
-      setSelectedVolunteers(initSelected);
-      setLoading(false);
-    })
-    .catch(err => console.error("Error fetching volunteers", err));
+    getVolunteers();
   }, []);
 
   const handleSearch = (e) => {
@@ -86,7 +60,7 @@ const VolunteerList = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      const allIds = filteredVolunteers.map(v => v.id);
+      const allIds = filteredVolunteers.map(v => v._id);
       setSelectedVolunteers(new Set(allIds));
     } else {
       setSelectedVolunteers(new Set());
@@ -106,7 +80,7 @@ const VolunteerList = () => {
   };
 
   const handleSendEmail = () => {
-    const selectedVolunteersList = volunteers.filter(v => selectedVolunteers.has(v.id));
+    const selectedVolunteersList = volunteers.filter(v => selectedVolunteers.has(v._id));
     const selectedEmails = selectedVolunteersList.map(v => v.email);
     
     // Replace this with your actual email sending logic
@@ -117,7 +91,7 @@ const VolunteerList = () => {
   const filteredVolunteers = volunteers.filter(volunteer => {
     const matchesSearch = volunteer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          volunteer.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter ? volunteer.volunteeringRole === roleFilter : true;
+    const matchesRole = roleFilter ? volunteer.volunteering_role === roleFilter : true;
     return matchesSearch && matchesRole;
   });
 
@@ -132,17 +106,12 @@ const VolunteerList = () => {
     setShowModal(true);
   };
 
-  const handleEdit = (volunteerId) => {
-    // Implement edit functionality
-    console.log('Edit volunteer:', volunteerId);
-  };
-
   const handleDelete = async (volunteerId) => {
     if (window.confirm('Are you sure you want to delete this volunteer?')) {
       try {
         // Replace with your actual API call
-        await fetch(`/api/volunteers/${volunteerId}`, { method: 'DELETE' });
-        fetchVolunteers();
+        await rejectApplication(volunteerId);
+        getVolunteers();
       } catch (error) {
         console.error('Error deleting volunteer:', error);
       }
@@ -209,17 +178,17 @@ const VolunteerList = () => {
             </thead>
             <tbody>
               {paginatedVolunteers.map(volunteer => (
-                <tr key={volunteer.id}>
+                <tr key={volunteer._id}>
                   <td>
                     <input
                       type="checkbox"
-                      checked={selectedVolunteers.has(volunteer.id)}
-                      onChange={() => handleSelectVolunteer(volunteer.id)}
+                      checked={selectedVolunteers.has(volunteer._id)}
+                      onChange={() => handleSelectVolunteer(volunteer._id)}
                     />
                   </td>
                   <td>{volunteer.name}</td>
                   <td>{volunteer.email}</td>
-                  <td>{volunteer.volunteeringRole}</td>
+                  <td>{volunteer.volunteering_role}</td>
                   <td>
                     <div className="volunteer-actions">
                       <button
@@ -229,14 +198,8 @@ const VolunteerList = () => {
                         View
                       </button>
                       <button
-                        className="action-button edit-button"
-                        onClick={() => handleEdit(volunteer.id)}
-                      >
-                        Edit
-                      </button>
-                      <button
                         className="action-button delete-button"
-                        onClick={() => handleDelete(volunteer.id)}
+                        onClick={() => handleDelete(volunteer._id)}
                       >
                         Delete
                       </button>
@@ -278,24 +241,76 @@ const VolunteerList = () => {
       )}
 
       {showModal && selectedVolunteer && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="volunteer-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-overlay">
+          <div className="modal-content">
             <div className="modal-header">
               <h2>Volunteer Details</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
             </div>
-            <div>
-              <p><strong>Name:</strong> {selectedVolunteer.name}</p>
-              <p><strong>Email:</strong> {selectedVolunteer.email}</p>
-              <p><strong>Phone:</strong> {selectedVolunteer.phoneNumber}</p>
-              <p><strong>Role:</strong> {selectedVolunteer.volunteeringRole}</p>
-              <p><strong>Description:</strong> {selectedVolunteer.description_paragraph}</p>
-              <p><strong>Availabilities:</strong></p>
-              <ul>
-                {selectedVolunteer.availabilities.map(date => (
-                  <li key={date}>{new Date(date).toLocaleDateString()}</li>
-                ))}
-              </ul>
+            <div className="modal-body">
+              <div className="detail-row">
+                <div className="detail-label">Name:</div>
+                <div className="detail-value">{selectedVolunteer.name}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Email:</div>
+                <div className="detail-value">{selectedVolunteer.email}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Phone:</div>
+                <div className="detail-value">{selectedVolunteer.phone_number || 'N/A'}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Role:</div>
+                <div className="detail-value">{selectedVolunteer.volunteering_role || 'N/A'}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Description:</div>
+                <div className="detail-value">{selectedVolunteer.desc_paragraph || 'N/A'}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Availabilities:</div>
+                <div className="detail-value">
+                  {selectedVolunteer.availabilities ? (
+                    typeof selectedVolunteer.availabilities === 'string' ? (
+                      selectedVolunteer.availabilities
+                    ) : Array.isArray(selectedVolunteer.availabilities) ? (
+                      <ul className="availability-list">
+                        {selectedVolunteer.availabilities.map((date, index) => (
+                          <li key={index}>{new Date(date).toLocaleDateString()}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      'N/A'
+                    )
+                  ) : (
+                    'N/A'
+                  )}
+                </div>
+              </div>
+              {selectedVolunteer.cv && (
+                <div className="detail-row">
+                  <div className="detail-label">CV:</div>
+                  <div className="detail-value">
+                    <a 
+                      href={`${API_BASE}/cv/${selectedVolunteer._id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="cv-link"
+                    >
+                      View CV
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button
+                className="modal-button"
+                onClick={() => setShowModal(false)}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
