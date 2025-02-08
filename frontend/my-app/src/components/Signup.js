@@ -8,7 +8,7 @@ import { signupVolunteer } from "../services/api";
 const Signup = () => {
   const [formData, setFormData] = useState({
     name: "",
-    description_paragraph: "",
+    desc_paragraph: "",
     email: "",
     phoneNumber: "",
     cv: null,
@@ -34,7 +34,10 @@ const Signup = () => {
   };
 
   const handleDateClick = (date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    // Force date to be interpreted in local timezone
+    const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dateStr = localDate.toISOString().split('T')[0];
+    
     setFormData(prevData => {
       const currentDates = [...prevData.availabilities];
       const dateIndex = currentDates.indexOf(dateStr);
@@ -55,7 +58,8 @@ const Signup = () => {
   };
 
   const tileClassName = ({ date }) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dateStr = localDate.toISOString().split('T')[0];
     return formData.availabilities.includes(dateStr) ? 'selected-date' : '';
   };
 
@@ -82,6 +86,8 @@ const Signup = () => {
         volunteering_role: "",
         availabilities: []
       });
+      const fileInput = document.querySelector('input[type="file"]');
+      if (fileInput) fileInput.value = '';
     } catch (error) {
       console.error("Signup error", error);
       setMessage("Error signing up!");
@@ -102,15 +108,16 @@ const Signup = () => {
             <input 
               name="name" 
               value={formData.name} 
-              onChange={handleChange} 
+              onChange={handleChange}
+              placeholder="Enter your name"
               required
             />
           </div>
 
           <div className="form-group">
             <label>Description:</label>
-            <textarea 
-              name="description_paragraph"
+            <input 
+              name="desc_paragraph"
               value={formData.desc_paragraph}
               onChange={handleChange}
               placeholder="Tell us about yourself and why you'd like to volunteer..."
@@ -124,7 +131,8 @@ const Signup = () => {
               name="email" 
               type="email" 
               value={formData.email} 
-              onChange={handleChange} 
+              onChange={handleChange}
+              placeholder="example@gmail.com" 
               required
             />
           </div>
@@ -137,7 +145,7 @@ const Signup = () => {
               pattern="[0-9]{10,}"
               value={formData.phone_number} 
               onChange={handleChange} 
-              placeholder="Enter your phone number"
+              placeholder="1234567890"
               required
             />
           </div>
@@ -177,6 +185,9 @@ const Signup = () => {
                 tileClassName={tileClassName}
                 selectRange={false}
                 minDate={new Date()}
+                calendarType="gregory"
+                locale="en-US"
+                formatDay={(locale, date) => date.getDate()}
               />
             </div>
             <div className="selected-dates">
@@ -184,9 +195,13 @@ const Signup = () => {
               <ul>
                 {formData.availabilities
                   .sort()
-                  .map(date => (
-                    <li key={date}>{new Date(date).toLocaleDateString()}</li>
-                  ))}
+                  .map(date => {
+                    // Adjust the date display to match local timezone
+                    const displayDate = new Date(date + 'T12:00:00');
+                    return (
+                      <li key={date}>{displayDate.toLocaleDateString()}</li>
+                    );
+                  })}
               </ul>
             </div>
           </div>
