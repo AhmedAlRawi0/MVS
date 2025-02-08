@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/VolunteerList.css';
-import { fetchVolunteers, rejectApplication } from "../services/api";
+import { fetchVolunteers, rejectApplication, sendEmails } from "../services/api";
 
 const API_BASE = "http://127.0.0.1:5000"; 
 
@@ -79,13 +79,31 @@ const VolunteerList = () => {
     });
   };
 
-  const handleSendEmail = () => {
-    const selectedVolunteersList = volunteers.filter(v => selectedVolunteers.has(v._id));
-    const selectedEmails = selectedVolunteersList.map(v => v.email);
-    
-    // Replace this with your actual email sending logic
-    console.log('Sending email to:', selectedEmails);
-    alert(`Email would be sent to ${selectedEmails.length} volunteers`);
+  const handleEmailChange = (e) => {
+    setEmailDetails({ ...emailDetails, [e.target.name]: e.target.value });
+  };
+
+  const handleSendEmail = async () => {
+    try {
+      const selectedIds = Array.from(selectedVolunteers);
+      
+      const response = await sendEmails({
+        volunteerIds: selectedIds,
+        subject: emailDetails.subject,
+        message: emailDetails.message
+      });
+
+      if (response.data.success) {
+        setResponse(response.data.message);
+        // Clear form after successful send
+        setEmailDetails({ subject: '', message: '' });
+      } else {
+        setResponse('Failed to send email: ' + response.data.message);
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      setResponse('Failed to send email. Please try again.');
+    }
   };
 
   const filteredVolunteers = volunteers.filter(volunteer => {
@@ -118,10 +136,6 @@ const VolunteerList = () => {
     }
   };
 
-  const handleEmailChange = (e) => {
-    setEmailDetails({ ...emailDetails, [e.target.name]: e.target.value });
-  };
-
   if (loading) {
     return <div className="volunteer-empty">Loading...</div>;
   }
@@ -130,14 +144,7 @@ const VolunteerList = () => {
     <div className="volunteer-list-container">
       <div className="volunteer-list-header">
         <h1 className="volunteer-list-title">Volunteer List</h1>
-        {selectedVolunteers.size > 0 && (
-          <button 
-            className="email-button"
-            onClick={handleSendEmail}
-          >
-            Send Email to Selected ({selectedVolunteers.size})
-          </button>
-        )}
+        
       </div>
 
       <div className="volunteer-search">
@@ -316,18 +323,38 @@ const VolunteerList = () => {
         </div>
       )}
 
-      <div style={{ marginTop: "20px" }}>
-        <h3>Send Email</h3>
-        <div>
-          <label>Subject: </label>
-          <input type="text" name="subject" value={emailDetails.subject} onChange={handleEmailChange} />
+      <div className="email-section">
+        <h3>Send Email to Selected Volunteers</h3>
+        <div className="email-form">
+          <div className="email-form-group">
+            <label>Subject:</label>
+            <input 
+              type="text" 
+              name="subject" 
+              value={emailDetails.subject} 
+              onChange={handleEmailChange}
+              placeholder="Enter email subject"
+            />
+          </div>
+          <div className="email-form-group">
+            <label>Message:</label>
+            <textarea 
+              name="message" 
+              value={emailDetails.message} 
+              onChange={handleEmailChange}
+              placeholder="Enter your message"
+              rows="4"
+            />
+          </div>
+          <button 
+            className="email-submit-button"
+            onClick={handleSendEmail}
+            disabled={selectedVolunteers.size === 0}
+          >
+            Send Email to Selected ({selectedVolunteers.size})
+          </button>
+          {response && <p className="email-response">{response}</p>}
         </div>
-        <div>
-          <label>Message: </label>
-          <textarea name="message" value={emailDetails.message} onChange={handleEmailChange} />
-        </div>
-        <button onClick={handleSendEmail}>Send Email</button>
-        {response && <p>{response}</p>}
       </div>
     </div>
   );

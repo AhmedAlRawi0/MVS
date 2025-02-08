@@ -347,4 +347,84 @@
   .action-button {
     width: 100%;
   }
+}
+
+.email-section {
+  margin-top: 40px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.email-section h3 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 1.3rem;
+}
+
+.email-form {
+  max-width: 600px;
+}
+
+.email-form-group {
+  margin-bottom: 20px;
+}
+
+.email-form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #555;
+}
+
+.email-form-group input,
+.email-form-group textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.email-form-group input:focus,
+.email-form-group textarea:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.email-submit-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.email-submit-button:hover {
+  background-color: #0056b3;
+}
+
+.email-submit-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.email-response {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  font-size: 14px;
+}
+
+.email-response.error {
+  background-color: #ffebee;
+  color: #c62828;
 } 
