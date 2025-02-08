@@ -1,7 +1,8 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
 import Signup from "./components/Signup";
-import Applications from "./components/Applications";
+import Applications from "./components/ApplicationList";
 import VolunteerList from "./components/VolunteerList";
 import './styles/global.css';
 import './styles/navbar.css';
@@ -10,18 +11,14 @@ import './styles/footer.css';
 const App = () => {
   return (
     <Router>
-      <nav>
-        <ul>
-          <li><Link to="/">Volunteer Signup</Link></li>
-          <li><Link to="/applications">Applications (Admin)</Link></li>
-          <li><Link to="/volunteers">Volunteer List (Admin)</Link></li>
-        </ul>
-      </nav>
-      <Routes>
-        <Route path="/" element={<Signup />} />
-        <Route path="/applications" element={<Applications />} />
-        <Route path="/volunteers" element={<VolunteerList />} />
-      </Routes>
+      <div className="App">
+        <Navbar />
+        <Routes>
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/volunteers" element={<VolunteerList />} />
+          <Route path="/applications" element={<Applications />} />
+        </Routes>
+      </div>
     </Router>
   );
 };
