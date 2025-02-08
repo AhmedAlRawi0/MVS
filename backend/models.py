@@ -7,6 +7,7 @@ class Volunteer:
                  name,
                  desc_paragraph,
                  phone_number,
+                 gender,
                  email,
                  cv=None,
                  volunteering_role=None,
@@ -18,6 +19,7 @@ class Volunteer:
         self.phone_number = phone_number
         self.desc_paragraph = desc_paragraph
         self.email = email
+        self.gender = gender
         self.is_screened = is_screened
 
         # cv stores the GridFS file ID. It can be None if the user did not upload a file.
@@ -41,6 +43,7 @@ class Volunteer:
             "name": self.name,
             "desc_paragraph": self.desc_paragraph,
             "email": self.email,
+            "gender": self.gender,
             "phone_number": self.phone_number,
             "cv": str(self.cv) if self.cv else None,
             "volunteering_role": self.volunteering_role,
@@ -63,6 +66,7 @@ class Volunteer:
             phone_number=data.get("phone_number"),
             email=data.get("email"),
             cv=cv,
+            gender=data.get("gender"),
             volunteering_role=data.get("volunteering_role"),
             availabilities=data.get("availabilities"),
             _id=_id,
